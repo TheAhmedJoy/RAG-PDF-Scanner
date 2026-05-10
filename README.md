@@ -66,6 +66,19 @@ RAG-PDF-Scanner/
 ├── uv.lock
 └── README.md
 ```
+---
+
+## Deployment (AWS EC2)
+
+The app has also been deployed to a single AWS EC2 instance for live testing.
+
+- **Instance:** `t2.micro` running **Ubuntu 22.04**
+- **Process management:** All four services — FastAPI (Uvicorn), the Inngest dev server, the Qdrant container, and the Streamlit UI — are run together via a **`docker-compose.yml`** file, so a single `docker compose up -d` brings the whole stack online and `docker compose down` tears it down
+- **Networking:** The Streamlit port is opened directly through the EC2 **security group**, so users hit Streamlit from the public IP without a reverse proxy in front of it (no Nginx, no domain, no HTTPS termination, aimed for ease of use)
+- **Persistence:** The Qdrant volume is mounted from the host so ingested vectors survive container restarts
+- **Status:** Hosting is intermittent because a `t2.micro` isn't free forever and the app gets very little traffic, the instance may be stopped at any time. When it's running, the URL is shared in the repo description. You can view the live demo at `http://18.119.126.28:8501/`
+- **Live Inngest dashboard:** The Inngest dev server's UI (port `8288`) is also exposed through the security group, so you can watch events fire and step-by-step function runs in real time at `http://18.119.126.28:8288` while the app is up.
+- **Want to run it yourself?** Instructions for setting it up locally are below.
 
 ---
 
@@ -77,6 +90,8 @@ RAG-PDF-Scanner/
 - An **OpenAI API key**
 
 Create a `.env` file in the project root:
+
+- **You must provide your own OpenAI API Key in the .env**
 
 ```env
 OPENAI_API_KEY=sk-...
@@ -143,3 +158,5 @@ Streamlit UI  ──fires events──►  Inngest Dev Server  ──dispatches�
 - Streamlit never calls OpenAI or Qdrant directly — it only sends Inngest events and polls Inngest for the resulting run output.
 - The FastAPI process is what actually executes the Inngest functions; the Inngest dev server is the orchestrator/observer.
 - Qdrant lives in its own Docker container at `localhost:6333`.
+
+---
