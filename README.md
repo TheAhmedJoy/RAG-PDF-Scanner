@@ -84,18 +84,12 @@ The app has also been deployed to a single AWS EC2 instance for live testing.
 
 ## Prerequisites
 
-- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** installed and running. Qdrant runs as a local Docker container, so Docker Desktop is required before you start anything.
+- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** installed. Qdrant runs as a local Docker container, so Docker Desktop is required before you start anything.
 - **Python 3.14+** (uv will install it for you if needed)
 - **Node.js / npx** (used to run the local Inngest dev server)
 - An **OpenAI API key**
 
-Create a `.env` file in the project root:
-
-- **You must provide your own OpenAI API Key in the .env**
-
-```env
-OPENAI_API_KEY=sk-...
-```
+> **Heads up:** You don't need to activate the `.venv` yourself — `uv` manages its own. If your prompt shows a venv name in parentheses (e.g. `(rag-pdf-scanner)`) and you see a `VIRTUAL_ENV ... does not match the project environment path` warning, run `deactivate` (or open a fresh terminal) before running any `uv` commands. **Don't reach for `--active`** unless you know the activated venv is the one for this project.
 
 ---
 
@@ -103,15 +97,30 @@ OPENAI_API_KEY=sk-...
 
 You'll end up with **four terminals open**, one for each long-running process. Run the steps in order.
 
-### 1. Initialize the project and install dependencies
+### 1. Clone the repository
 
 ```bash
-uv init .
-
-uv add fastapi inngest llama-index-core llama-index-readers-file python-dotenv qdrant-client uvicorn streamlit openai
+git clone https://github.com/TheAhmedJoy/RAG-PDF-Scanner.git
+cd RAG-PDF-Scanner
 ```
 
-### 2. Start the FastAPI / Inngest backend
+### 2. Add a `.env` file in the project root
+
+**You must provide your own OpenAI API Key in the `.env`.**
+
+```env
+OPENAI_API_KEY=sk-...
+```
+
+### 3. Install dependencies
+
+```bash
+uv sync
+```
+
+This reads `pyproject.toml` + `uv.lock` and installs the exact dependency versions into a project-managed `.venv` for you.
+
+### 4. Start the FastAPI / Inngest backend
 
 ```bash
 uv run uvicorn main:app
@@ -119,7 +128,7 @@ uv run uvicorn main:app
 
 This serves the Inngest functions at `http://127.0.0.1:8000/api/inngest`.
 
-### 3. In a **new terminal**, start the local Inngest dev server
+### 5. In a **new terminal**, start the local Inngest dev server
 
 ```bash
 npx inngest-cli@latest dev -u http://127.0.0.1:8000/api/inngest --no-discovery
@@ -127,7 +136,9 @@ npx inngest-cli@latest dev -u http://127.0.0.1:8000/api/inngest --no-discovery
 
 This launches the Inngest dashboard (typically at `http://127.0.0.1:8288`) and registers the FastAPI app's functions so events can be dispatched and runs can be observed.
 
-### 4. In a **new terminal**, start Qdrant in Docker
+### 6. Open Docker Desktop, then in a **new terminal** start Qdrant in Docker
+
+Make sure Docker Desktop is running before you run this:
 
 ```bash
 docker run -d --name qdrantRagDb -p 6333:6333 -v "$(pwd)/qrdant_storage:/qdrant/storage" qdrant/qdrant
@@ -135,7 +146,7 @@ docker run -d --name qdrantRagDb -p 6333:6333 -v "$(pwd)/qrdant_storage:/qdrant/
 
 This creates and starts a container called `qdrantRagDb`, exposes port `6333`, and persists data to `./qrdant_storage` on your host so vectors survive restarts. After the first run, subsequent sessions only need `docker start qdrantRagDb`.
 
-### 5. In a **new terminal**, start the Streamlit UI
+### 7. In a **new terminal**, start the Streamlit UI
 
 ```bash
 uv run streamlit run .\streamlit_app.py
